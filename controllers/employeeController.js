@@ -3,13 +3,68 @@ var router = express.Router();
 const mongoose = require('mongoose');
 const Employee = mongoose.model('Employee');
 
-router.get('/', (req, res) => {
+const passport = require('passport');
+
+
+const Schema = mongoose.Schema;
+const UserDetail = new Schema({
+      username: String,
+      password: String
+    });
+const UserDetails = mongoose.model('userInfo', UserDetail, 'userInfo');
+
+/* PASSPORT LOCAL AUTHENTICATION */
+
+const LocalStrategy = require('passport-local').Strategy;
+
+passport.use(new LocalStrategy(
+  function(username, password, done) {
+      UserDetails.findOne({
+        username: username
+      }, function(err, user) {
+        if (err) {
+          return done(err);
+        }
+
+        if (!user) {
+          return done(null, false);
+        }
+
+        if (user.password != password) {
+          return done(null, false);
+        }
+        return done(null, user);
+      });
+  }
+));
+
+
+passport.serializeUser(function(user, cb) {
+  cb(null, user);
+});
+
+passport.deserializeUser(function(id, cb) {
+  User.findById(id, function(err, user) {
+    cb(err, user);
+  });
+});
+
+router.post('/',
+  passport.authenticate('local', { failureRedirect: '/error' }),
+  function(req, res) {
+    res.redirect('/employee');
+  });
+
+
+router.get('/', (req, res) => res.render('auth'));
+
+router.get('/employee', (req, res) => {
     res.render("employee/addOrEdit", {
         viewTitle: "Insert Employee"
     });
 });
 
-router.post('/', (req, res) => {
+router.post('/employee', (req, res) => {
     if (req.body._id == '')
         insertRecord(req, res);
         else
@@ -58,7 +113,7 @@ function updateRecord(req, res) {
 }
 
 
-router.get('/list', (req, res) => {
+router.get('/employee/list', (req, res) => {
     Employee.find((err, docs) => {
         if (!err) {
             res.render("employee/list", {
@@ -87,7 +142,7 @@ function handleValidationError(err, body) {
     }
 }
 
-router.get('/:id', (req, res) => {
+router.get('/employee/:id', (req, res) => {
     Employee.findById(req.params.id, (err, doc) => {
         if (!err) {
             res.render("employee/addOrEdit", {
@@ -98,7 +153,7 @@ router.get('/:id', (req, res) => {
     });
 });
 
-router.get('/delete/:id', (req, res) => {
+router.get('/employee/delete/:id', (req, res) => {
     Employee.findByIdAndRemove(req.params.id, (err, doc) => {
         if (!err) {
             res.redirect('/employee/list');

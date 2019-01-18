@@ -4,6 +4,7 @@ const express = require('express');
 const path = require('path');
 const exphbs = require('express-handlebars');
 const bodyparser = require('body-parser');
+const passport = require('passport');
 
 const employeeController = require('./controllers/employeeController');
 
@@ -19,5 +20,6 @@ app.set('view engine', 'hbs');
 app.listen(3000, () => {
     console.log('Express server started at port : 3000');
 });
-
-app.use('/employee', employeeController);
+app.use(passport.initialize());
+app.use(passport.session());
+app.use('/', employeeController);
